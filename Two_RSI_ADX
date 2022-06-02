@@ -1,0 +1,56 @@
+//@version=5
+
+indicator(title="TWO RSI + ADX", shorttitle="TWO RSI + ADX")
+
+// Indicator Switches
+first_rsi_switch = input.bool(true, title="First RSI On/Off" ,group="Visibiity Controls")
+second_rsi_switch = input.bool(true, title="Second RSI On/Off" ,group="Visibiity Controls")
+adx_switch = input.bool(true, title="ADX On/Off" , group="Visibiity Controls")
+
+// FIRST RSI
+
+first_rsiLengthInput = input.int(14, minval=1, title="First RSI Length", group="First RSI Settings")
+first_rsiSourceInput = input.source(close, "Source", group="First RSI Settings")
+
+second_rsiLengthInput = input.int(14, minval=1, title="Second RSI Length", group="Second RSI Settings")
+second_rsiSourceInput = input.source(close, "Source", group="Second RSI Settings")
+
+first_pine_rsi(x, y) => 
+    
+    u = math.max(x - x[1], 0) // upward ta.change
+    d = math.max(x[1] - x, 0) // downward ta.change
+    rs = ta.rma(u, y) / ta.rma(d, y)
+    res = 100 - 100 / (1 + rs)
+    res
+
+plot(first_rsi_switch ? first_pine_rsi(first_rsiSourceInput, first_rsiLengthInput) :na , title="First RSI", color=color.black)
+
+
+// SECOND RSI
+second_pine_rsi(x, y) => 
+    u = math.max(x - x[1], 0) // upward ta.change
+    d = math.max(x[1] - x, 0) // downward ta.change
+    rs = ta.rma(u, y) / ta.rma(d, y)
+    res = 100 - 100 / (1 + rs)
+    res
+
+plot(second_rsi_switch ? second_pine_rsi(second_rsiSourceInput, second_rsiLengthInput) :na , title="Second RSI", color=color.blue)
+
+// ADX
+adxlen = input(14, title="ADX Smoothing" ,group="ADX Settings")
+dilen = input(14, title="DI Length", group="ADX Settings")
+dirmov(len) =>
+	adx_up = ta.change(high)
+	adx_down = -ta.change(low)
+	plusDM = na(adx_up) ? na : (adx_up > adx_down and adx_up > 0 ? adx_up : 0)
+	minusDM = na(adx_down) ? na : (adx_down > adx_up and adx_down > 0 ? adx_down : 0)
+	truerange = ta.rma(ta.tr, len)
+	plus = fixnan(100 * ta.rma(plusDM, len) / truerange)
+	minus = fixnan(100 * ta.rma(minusDM, len) / truerange)
+	[plus, minus]
+adx(dilen, adxlen) =>
+	[plus, minus] = dirmov(dilen)
+	sum = plus + minus
+	adx = 100 * ta.rma(math.abs(plus - minus) / (sum == 0 ? 1 : sum), adxlen)
+sig = adx(dilen, adxlen)
+plot(adx_switch ? sig : na, color=color.red, title="ADX")
