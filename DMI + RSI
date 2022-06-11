@@ -1,0 +1,40 @@
+//@version=5
+
+indicator(title="DMI + RSI", shorttitle="DMI + RSI")
+
+// Indicator Switches
+rsi_switch = input.bool(true, title="RSI On/Off" ,group="Visibiity Controls")
+dmi_switch = input.bool(true, title="DMI On/Off" , group="Visibiity Controls")
+
+// RSI
+
+first_rsiLengthInput = input.int(14, minval=1, title="RSI Length", group="RSI Settings")
+first_rsiSourceInput = input.source(close, "Source", group="RSI Settings")
+
+first_pine_rsi(x, y) => 
+    
+    u = math.max(x - x[1], 0) // upward ta.change
+    d = math.max(x[1] - x, 0) // downward ta.change
+    rs = ta.rma(u, y) / ta.rma(d, y)
+    res = 100 - 100 / (1 + rs)
+    res
+
+plot(rsi_switch ? first_pine_rsi(first_rsiSourceInput, first_rsiLengthInput) :na , title="First RSI", color=color.black)
+
+
+
+// DMI
+lensig = input.int(14, title="ADX Smoothing", minval=1, maxval=50, group="DMI Settings")
+len = input.int(14, minval=1, title="DI Length", group="DMI Settings")
+up = ta.change(high)
+down = -ta.change(low)
+plusDM = na(up) ? na : (up > down and up > 0 ? up : 0)
+minusDM = na(down) ? na : (down > up and down > 0 ? down : 0)
+trur = ta.rma(ta.tr, len)
+plus = fixnan(100 * ta.rma(plusDM, len) / trur)
+minus = fixnan(100 * ta.rma(minusDM, len) / trur)
+sum = plus + minus
+adx = 100 * ta.rma(math.abs(plus - minus) / (sum == 0 ? 1 : sum), lensig)
+plot(dmi_switch ? adx : na, color=#F50057, title="ADX")
+plot(dmi_switch ? plus : na, color=#2962FF, title="+DI")
+plot(dmi_switch ? minus : na, color=#FF6D00, title="-DI")
