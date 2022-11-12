@@ -51,4 +51,4 @@ adx(dilen, adxlen) =>
 	sum = plus + minus
 	adx = 100 * ta.rma(math.abs(plus - minus) / (sum == 0 ? 1 : sum), adxlen)
 sig = adx(dilen, adxlen)
-plot(adx_switch ? sig : na, color=color.red, title="ADX")
+plot(adx_switch ? sig : na, color=color.rgb(0, 0, 0), title="ADX")
