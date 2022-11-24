@@ -1,0 +1,74 @@
+//@version=5
+indicator(title="3 EMA + Bollinger Bands + MACD", shorttitle="3 EMA + Bollinger Bands + MACD", overlay=true, timeframe="", timeframe_gaps=true)
+// Indicator Switches
+ema1_switch = input.bool(true, title="EMA1 Switch" ,group="Visibiity Controls")
+ema2_switch = input.bool(true, title="EMA2 Switch" ,group="Visibiity Controls")
+ema3_switch = input.bool(true, title="EMA3 Switch" ,group="Visibiity Controls")
+
+macd_switch = input.bool(true, title="MACD On/Off" , group="Visibiity Controls")
+
+bb_switch = input.bool(true, title="Bollinger Bands On/Off" , group="Visibiity Controls")
+
+
+// First EMA
+len = input.int(9, minval=1, title="Length" , group="EMA 1 Settings")
+src = input(close, title="Source" , group="EMA 1 Settings")
+offset = input.int(title="Offset", defval=0, minval=-500, maxval=500 , group="EMA 1 Settings")
+out = ta.ema(src, len)
+plot(ema1_switch ? out: na , title="1 EMA", color=color.red, offset=offset)
+
+// //  Second EMA
+
+len1 = input.int(20, minval=1, title="Length" , group="EMA 2 Settings")
+src1 = input(close, title="Source" , group="EMA 2 Settings")
+offset1 = input.int(title="Offset", defval=0, minval=-500, maxval=500 , group="EMA 2 Settings")
+out1 = ta.ema(src1, len1)
+plot(ema2_switch ? out1: na , title="2 EMA", color=color.green, offset=offset1)
+
+// //  Third EMA
+
+len2 = input.int(50, minval=1, title="Length" , group="EMA 3 Settings")
+src2 = input(close, title="Source" , group="EMA 3 Settings")
+offset2 = input.int(title="Offset", defval=0, minval=-500, maxval=500 , group="EMA 3 Settings")
+out2 = ta.ema(src2, len2)
+plot(ema3_switch ? out2: na , title="3 EMA", color=color.blue, offset=offset2)
+
+// Bollinger Bands
+bb_length = input.int(20, minval=1 , group="Bollinger Bands Settings")
+bb_src = input(close, title="Source" , group="Bollinger Bands Settings")
+bb_mult = input.float(2.0, minval=0.001, maxval=50, title="StdDev" , group="Bollinger Bands Settings")
+basis = ta.sma(bb_src, bb_length)
+dev = bb_mult * ta.stdev(bb_src, bb_length)
+upper = basis + dev
+lower = basis - dev
+bb_offset = input.int(0, "Offset", minval = -500, maxval = 500 , group="Bollinger Bands Settings")
+plot(bb_switch ? basis: na, "Basis", color=#FF6D00, offset = offset)
+p1b = plot(bb_switch ? upper : na, "Upper", color=#2962FF, offset = bb_offset)
+p2 = plot(bb_switch ? lower: na, "Lower", color=#2962FF, offset = bb_offset)
+fill(p1b, p2, title = "Background", color=color.rgb(33, 150, 243, 95))
+            
+
+// MACD - will create issue - will break the scaling as MACD is a non-overlay indicator its runs on its seperate pane
+fast_length = input(title="Fast Length", defval=12, group="MACD Settings")
+slow_length = input(title="Slow Length", defval=26, group="MACD Settings")
+macd_src = input(title="Source", defval=close, group="MACD Settings")
+signal_length = input.int(title="Signal Smoothing",  minval = 1, maxval = 50, defval = 9, group="MACD Settings")
+sma_source = input.string(title="Oscillator MA Type",  defval="EMA", options=["SMA", "EMA"], group="MACD Settings")
+sma_signal = input.string(title="Signal Line MA Type", defval="EMA", options=["SMA", "EMA"], group="MACD Settings")
+// Plot colors
+col_macd = input(#2962FF, "MACD Line  ", group="MACD Color Settings", inline="MACD")
+col_signal = input(#FF6D00, "Signal Line  ", group="MACD Color Settings", inline="Signal")
+col_grow_above = input(#26A69A, "Above   Grow", group="MACD Histogram", inline="Above")
+col_fall_above = input(#B2DFDB, "Fall", group="MACD Histogram", inline="Above")
+col_grow_below = input(#FFCDD2, "Below Grow", group="MACD Histogram", inline="Below")
+col_fall_below = input(#FF5252, "Fall", group="MACD Histogram", inline="Below")
+// Calculating
+fast_ma = sma_source == "SMA" ? ta.sma(macd_src, fast_length) : ta.ema(macd_src, fast_length)
+slow_ma = sma_source == "SMA" ? ta.sma(macd_src, slow_length) : ta.ema(macd_src, slow_length)
+macd = fast_ma - slow_ma
+signal = sma_signal == "SMA" ? ta.sma(macd, signal_length) : ta.ema(macd, signal_length)
+hist = macd - signal
+hline(0, "Zero Line", color=color.new(#787B86, 50))
+plot(macd_switch ? hist : na, title="Histogram", style=plot.style_columns, color=(hist>=0 ? (hist[1] < hist ? col_grow_above : col_fall_above) : (hist[1] < hist ? col_grow_below : col_fall_below)))
+plot(macd_switch ? macd : na, title="MACD", color=col_macd)
+plot(macd_switch ? signal : na, title="Signal", color=col_signal)
